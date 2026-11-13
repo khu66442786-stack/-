@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>레전드 전공어플</title>
+<style>
+:root{--bg:#f4f6fb;--ink:#172033;--blue:#4169e1;--muted:#68738a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;color:var(--ink)}
+main{max-width:760px;margin:32px auto;padding:16px}.brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#4169e1,#7b61ff);display:grid;place-items:center;color:white;font-weight:900;font-size:21px}
+h1{font-size:24px;margin:0}.sub{color:var(--muted);font-size:13px;margin-top:3px}
+.panel{background:white;border:1px solid #e5e9f2;border-radius:18px;padding:20px;margin:14px 0;box-shadow:0 4px 18px #18284b08}
+label{font-weight:700;font-size:14px;display:block;margin:0 0 8px}select,input,textarea,button{font:inherit}
+select,input[type=text],textarea{width:100%;padding:12px;border:1px solid #dce2ee;border-radius:11px;background:white}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.upload{border:2px dashed #c9d4ee;background:#f8faff;border-radius:14px;padding:18px;text-align:center}
+button{border:0;border-radius:12px;background:var(--blue);color:white;padding:12px 16px;font-weight:750;cursor:pointer}
+button.secondary{background:#edf1ff;color:#3454c6}button.danger{background:#fff0f0;color:#b23b3b}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.file{padding:10px 0;border-bottom:1px solid #edf0f5;display:flex;justify-content:space-between;gap:10px;font-size:14px}.file:last-child{border:0}
+.pill{font-size:12px;padding:4px 8px;border-radius:20px;background:#eef2ff;color:#3558c9;white-space:nowrap}
+.small{font-size:12px;color:var(--muted)}.empty{color:var(--muted);text-align:center;padding:15px}
+@media(max-width:520px){main{margin:8px auto}.grid{grid-template-columns:1fr}.panel{padding:16px}}
+</style></head>
+<body><main>
+<header class="brand"><div class="logo">L</div><div><h1>레전드 전공어플</h1><div class="sub">역학 · 기계일반 전공 공부</div></div></header>
+<section class="panel"><div class="grid">
+<div><label for="subject">과목</label><select id="subject"><option>역학</option><option>기계일반</option></select></div>
+<div><label for="difficulty">문제 난이도</label><select id="difficulty"><option>보통</option><option>쉬움</option><option>어려움</option></select></div>
+</div></section>
+<section class="panel"><label>학습자료 등록</label><div class="upload"><p style="margin:0 0 8px">사진 또는 PDF를 선택해 추가</p><input id="files" type="file" accept="image/*,.pdf" multiple><p class="small">등록한 자료는 이 브라우저에 저장돼 다음 방문에도 남아 있어요.</p></div>
+<div class="row" style="margin-top:12px"><strong>내 자료</strong><span class="pill" id="count">0개</span></div><div id="fileList" class="empty">아직 등록된 자료가 없습니다.</div>
+</section>
+<section class="panel"><label>문제 학습</label><p class="small">현재는 앱 기본 화면과 자료 보관 기능을 준비한 단계예요. AI가 자료를 읽고 문제를 생성하는 기능은 다음 단계에서 연결합니다.</p>
+<button id="study" class="secondary" style="width:100%">학습 기능 준비 중</button>
+</section>
+<footer class="small" style="text-align:center;padding:12px">Legend Major · 공부를 이어가는 나만의 전공 도구</footer>
+</main>
+<script>
+const dbName='legend-major-files-v1';let db;
+const request=indexedDB.open(dbName,1);
+request.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('files'))d.createObjectStore('files',{keyPath:'id',autoIncrement:true})};
+request.onsuccess=e=>{db=e.target.result;render()};
+request.onerror=()=>alert('브라우저 저장 기능을 열지 못했어요.');
+const input=document.getElementById('files');
+input.addEventListener('change',async()=>{if(!db)return;for(const f of input.files){await new Promise((resolve,reject)=>{const tx=db.transaction('files','readwrite');tx.objectStore('files').add({name:f.name,type:f.type,size:f.size,subject:document.getElementById('subject').value,added:Date.now(),blob:f});tx.oncomplete=resolve;tx.onerror=reject})}input.value='';render()});
+function render(){if(!db)return;const tx=db.transaction('files','readonly');tx.objectStore('files').getAll().onsuccess=e=>{const items=e.target.result;document.getElementById('count').textContent=items.length+'개';const list=document.getElementById('fileList');if(!items.length){list.className='empty';list.textContent='아직 등록된 자료가 없습니다.';return}list.className='';list.innerHTML='';items.forEach(item=>{const row=document.createElement('div');row.className='file';const info=document.createElement('div');info.textContent=item.name+' · '+item.subject;const tag=document.createElement('span');tag.className='pill';tag.textContent=item.type==='application/pdf'?'PDF':'사진';const del=document.createElement('button');del.className='danger';del.textContent='삭제';del.style.padding='5px 9px';del.onclick=()=>{const t=db.transaction('files','readwrite');t.objectStore('files').delete(item.id);t.oncomplete=render};row.append(info,tag,del);list.append(row)})}}
+</script></body></html>
